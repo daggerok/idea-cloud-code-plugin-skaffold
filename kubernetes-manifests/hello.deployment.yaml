@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: idea-cloud-code-plugin-skaffold-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: idea-cloud-code-plugin-skaffold
+  template:
+    metadata:
+      labels:
+        app: idea-cloud-code-plugin-skaffold
+    spec:
+      containers:
+      - name: idea-cloud-code-plugin-skaffold-deployment
+        image: docker.io/daggerok/idea-cloud-code-plugin-skaffold
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+        env:
+        - name: PORT
+          value: "8080"

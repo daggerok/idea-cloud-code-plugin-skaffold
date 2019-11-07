@@ -1,0 +1,15 @@
+#
+apiVersion: networking.k8s.io/v1beta1
+kind: Ingress
+metadata:
+  name: idea-cloud-code-plugin-skaffold-ingress
+  annotations:
+    ingress.kubernetes.io/ssl-redirect: "false"
+    #nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+    - http:
+        paths:
+          - backend:
+              serviceName: idea-cloud-code-plugin-skaffold-service
+              servicePort: 80

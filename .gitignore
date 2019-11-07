@@ -1,0 +1,13 @@
+!.idea/
+.idea/*
+!.idea/codeStyles/
+*.iml
+*.ipr
+*.iws
+*.log*
+**/target/**
+**/out/**
+**/.classpath
+**/.project
+**/.settings
+**/.DS_Store

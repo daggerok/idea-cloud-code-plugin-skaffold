@@ -1,0 +1,97 @@
+notifications:
+  email: false
+git:
+  quiet: true
+  depth: false
+language: java
+jdk: openjdk11
+node_js: lts/*
+python: 3.7
+matrix:
+  include:
+    - python: 3.7
+services:
+  - xvfb
+  - docker
+addons:
+  apt:
+    update: false
+    packages:
+      - jq
+      - bash
+      - curl
+      - tree
+      - docker-ce
+      - libxml2-utils
+      - libappindicator1
+      - fonts-liberation
+      - google-chrome-stable
+      - python3-setuptools
+      - python3-pip
+install: true
+before_install:
+  - export CHROME_BIN=/usr/bin/google-chrome
+  - export DISPLAY=:99.0
+  #
+  - |
+    if [ ! -f ${HOME}/.local/daggerok/bash-functions/master/main.bash ] ; then
+      mkdir -p ${HOME}/.local/daggerok/bash-functions/master ;
+      curl -s https://raw.githubusercontent.com/daggerok/bash-functions/master/main.bash > ${HOME}/.local/daggerok/bash-functions/master/main.bash ;
+    fi
+    source ${HOME}/.local/daggerok/bash-functions/master/main.bash ;
+  - stop_any 80 5432 8080
+  #
+  - export PATH=$HOME/.local/bin:$PATH
+  - pip -V
+  - docker-compose version
+  - pip3 install --user --upgrade pip
+  - pip install --user --upgrade httpie docker-compose
+  - http --version --debug
+  - pip -V
+  #
+  - stop_any 80 8080 5432
+  - docker-compose version
+env:
+  global:
+    - TERM=dumb
+jobs:
+  include:
+    - stage: test
+      name: k3d kubectl
+      jdk: openjdk11
+      script:
+        - cd $TRAVIS_BUILD_DIR
+        #- wget -q -O - https://raw.githubusercontent.com/rancher/k3d/master/install.sh | bash
+        - curl -s https://raw.githubusercontent.com/rancher/k3d/master/install.sh | bash
+        - k3d create --api-port 6551 --publish 80:80 --workers 1
+        - sleep 30s
+        - export KUBECONFIG="$(k3d get-kubeconfig --name='k3s-default')"
+        #
+        - curl -LO https://storage.googleapis.com/kubernetes-release/release/`curl -s https://storage.googleapis.com/kubernetes-release/release/stable.txt`/bin/linux/amd64/kubectl
+        - chmod +x ./kubectl
+        - mv ./kubectl ~/.local/bin/
+        - kubectl cluster-info
+        - kubectl get pods --all-namespaces
+        #
+        #- curl -Lo skaffold https://storage.googleapis.com/skaffold/releases/latest/skaffold-linux-amd64
+        #- chmod +x skaffold
+        #- mv skaffold ~/.local/bin/
+        #- ./mvnw clean compile jib:dockerBuild
+        #- skaffold --images daggerok/boot-skaffold
+        #- skaffold dev &
+        #
+        - kubectl get pods -o wide -w &
+        - kubectl apply -f kubernetes-manifests/
+        - sleep 1m
+        - kubectl get all -o wide
+        - http :/
+        #
+        - kubectl delete -f kubernetes-manifests/
+        - k3d stop
+        - k3d delete
+cache:
+  packages: true
+  directories:
+    - ~/.local/daggerok
+    - ~/.docker
+    - ~/.m2
